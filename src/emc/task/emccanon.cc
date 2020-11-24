@@ -44,6 +44,7 @@
 #include "emcglb.h"		// TRAJ_MAX_VELOCITY
 #include <rtapi_string.h>
 #include "modal_state.hh"
+#include "tooldata.hh"
 
 //#define EMCCANON_DEBUG
 
@@ -2629,16 +2630,15 @@ CANON_TOOL_TABLE GET_EXTERNAL_TOOL_TABLE(int pocket)
     CANON_TOOL_TABLE retval;
 
     if (pocket < 0 || pocket >= CANON_POCKETS_MAX) {
-	retval.toolno = -1;
+        retval.toolno = -1;
         ZERO_EMC_POSE(retval.offset);
         retval.frontangle = 0.0;
         retval.backangle = 0.0;
-	retval.diameter = 0.0;
+        retval.diameter = 0.0;
         retval.orientation = 0;
     } else {
-	retval = emcStatus->io.tool.toolTable[pocket];
+        retval= tool_tbl_get(pocket);
     }
-
     return retval;
 }
 
@@ -3005,17 +3005,19 @@ int GET_EXTERNAL_QUEUE_EMPTY(void)
 // Returns the "home pocket" of the tool currently in the spindle, ie the
 // pocket that the current tool was loaded from.  Returns 0 if there is no
 // tool in the spindle.
+
 int GET_EXTERNAL_TOOL_SLOT()
 {
     int toolno = emcStatus->io.tool.toolInSpindle;
     int pocket;
 
-    for (pocket = 1; pocket < CANON_POCKETS_MAX; pocket++) {
-        if (emcStatus->io.tool.toolTable[pocket].toolno == toolno) {
+    for (pocket = 1; pocket <= tool_tbl_last_index_get(); pocket++) { //note <=
+        CANON_TOOL_TABLE entry;
+        entry = tool_tbl_get(pocket);
+        if (entry.toolno == toolno) {
             return pocket;
         }
     }
-
     return 0;  // no tool in spindle
 }
 

@@ -32,6 +32,7 @@
 ********************************************************************/
 
 #include <saicanon.hh>
+#include "tooldata.hh"
 
 #include "rs274ngc.hh"
 #include "rs274ngc_interp.hh"
@@ -503,12 +504,25 @@ void USE_NO_SPINDLE_FORCE()
 /* Tool Functions */
 void SET_TOOL_TABLE_ENTRY(int pocket, int toolno, EmcPose offset, double diameter,
                           double frontangle, double backangle, int orientation) {
+
+#ifdef TOOL_MMAP //{
+    CANON_TOOL_TABLE temp = tool_tbl_get(pocket);
+    temp.toolno = toolno;
+    temp.offset = offset;
+    temp.diameter = diameter;
+    temp.frontangle = frontangle;
+    temp.backangle = backangle;
+    temp.orientation = orientation;
+    tool_tbl_put(temp,pocket);
+#else //}{
     _sai._tools[pocket].toolno = toolno;
     _sai._tools[pocket].offset = offset;
     _sai._tools[pocket].diameter = diameter;
     _sai._tools[pocket].frontangle = frontangle;
     _sai._tools[pocket].backangle = backangle;
     _sai._tools[pocket].orientation = orientation;
+#endif //}
+
     ECHO_WITH_ARGS("%d, %d, %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f, %.4f, %.4f, %d",
             pocket, toolno,
             offset.tran.x, offset.tran.y, offset.tran.z, offset.a, offset.b, offset.c, offset.u, offset.v, offset.w,
@@ -526,7 +540,13 @@ void CHANGE_TOOL(int slot)
 {
   PRINT("CHANGE_TOOL(%d)\n", slot);
   _sai._active_slot = slot;
+#ifdef TOOL_MMAP //{
+    CANON_TOOL_TABLE temp = tool_tbl_get(slot);
+    _sai._tools[0] = temp;
+    tool_tbl_put(temp,0);
+#else //}{
   _sai._tools[0] = _sai._tools[slot];
+#endif //}
 }
 
 void SELECT_TOOL(int tool)//TODO: fix slot number
@@ -917,7 +937,7 @@ int GET_EXTERNAL_POCKETS_MAX()
    in the given pocket */
 extern CANON_TOOL_TABLE GET_EXTERNAL_TOOL_TABLE(int pocket)
 {
-  return _sai._tools[pocket];
+  return tool_tbl_get(pocket);
 }
 
 /* Returns the system traverse rate */
