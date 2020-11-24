@@ -28,6 +28,7 @@
 #include "interp_internal.hh"
 #include "rs274ngc_interp.hh"
 #include "units.h"
+#include "tooldata.hh"
 
 /****************************************************************************/
 
@@ -713,7 +714,7 @@ int Interp::find_tool_pocket(setup_pointer settings, int toolno, int *pocket)
         return INTERP_OK;
     }
     *pocket = -1;
-    for(int i=0; i<CANON_POCKETS_MAX; i++) {
+    for(int i = 0; i<= tooldata_last_index_get(); i++) { //note <=
         if(settings->tool_table[i].toolno == toolno)
             *pocket = settings->tool_table[i].pocketno;
     }
@@ -722,6 +723,7 @@ int Interp::find_tool_pocket(setup_pointer settings, int toolno, int *pocket)
     return INTERP_OK;
 }
 
+// redundant: see above find_tool_pocket()
 int Interp::find_tool_index(setup_pointer settings, int toolno, int *index)
 {
     if(!settings->random_toolchanger && toolno == 0) {
@@ -729,7 +731,7 @@ int Interp::find_tool_index(setup_pointer settings, int toolno, int *index)
         return INTERP_OK;
     }
     *index = -1;
-    for(int i=0; i<CANON_POCKETS_MAX; i++) {
+    for(int i = 0; i <= tooldata_last_index_get(); i++) { //note <=
         if(settings->tool_table[i].toolno == toolno)
             *index = i;
     }

@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <signal.h>
 #include <math.h>
 
@@ -35,6 +37,7 @@
 #include "nml_oi.hh"
 #include "timer.hh"
 #include <rtapi_string.h>
+#include "tooldata.hh"
 
 /* Using halui: see the man page */
 
@@ -2184,9 +2187,10 @@ static void modify_hal_pins()
         *(halui_data->tool_diameter) = 0.0;
     } else {
         int pocket;
-        for (pocket = 0; pocket < CANON_POCKETS_MAX; pocket ++) {
-            if (emcStatus->io.tool.toolTable[pocket].toolno == emcStatus->io.tool.toolInSpindle) {
-                *(halui_data->tool_diameter) = emcStatus->io.tool.toolTable[pocket].diameter;
+        for (pocket = 0; pocket <= tooldata_last_index_get(); pocket ++) { // note <=
+            CANON_TOOL_TABLE temp = tooldata_get(pocket);
+            if (temp.toolno == emcStatus->io.tool.toolInSpindle) {
+                *(halui_data->tool_diameter) = temp.diameter;
                 break;
             }
         }
@@ -2315,6 +2319,13 @@ int main(int argc, char *argv[])
 	thisQuit();
 	exit(1);
     }
+
+#ifdef TOOL_MMAP //{
+    tool_mmap_user();
+#else //}{
+    //fprintf(stderr,"%8d HALUI REGISTER %p\n",getpid(), (CANON_TOOL_TABLE*)&emcStatus->io.tool.toolTable);
+    tool_nml_register((CANON_TOOL_TABLE*)&emcStatus->io.tool.toolTable);
+#endif //}
 
     // get current serial number, and save it for restoring when we quit
     // so as not to interfere with real operator interface
